@@ -8,7 +8,7 @@ Sudoku solver
 - Find corners
     - In memory, store feature extracted 2D-arrays of the four corners with different scale (9x9 and 16x16 perhaps?)
     - "Walk" over the input feature 2D-array and find the best match for each.
-    - Use some logic to make it more robust: use best match of same scale (for all four corners) and make sure the best matches are correctly placed geographically.
+    - Use some logic to make it more robust: use best match of same scale (for all four corners) and make sure the best matches are correctly placed compared to each other geographically.
     - Optional: use threshold to abort if we can't get good enough matches of the four corners.
 
 - Image normalization
