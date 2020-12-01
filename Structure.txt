@@ -1,0 +1,32 @@
+Sudoku solver
+
+- Handle imput image
+    - Turn color jpeg into grayscale
+    - Turn image into integer 2D-array
+    - Extract features using convolution and sobel filter
+
+- Find corners
+    - In memory, store feature extracted 2D-arrays of the four corners with different scale (9x9 and 16x16 perhaps?)
+    - "Walk" over the input feature 2D-array and find the best match for each.
+    - Use some logic to make it more robust: use best match of same scale (for all four corners) and make sure the best matches are correctly placed geographically.
+    - Optional: use threshold to abort if we can't get good enough matches of the four corners.
+
+- Image normalization
+    - If the number matrix is very skewed in the photo - can we use some kind of transform to straighten it up? Or perphas this is not necessary/befinical?
+    - Scale the 2D-matrix to some appropriate value so the comparisons with numbers will be correct in the next step. 
+
+- Find numbers
+    - Cut out the 81 squares where we expect the numbers to be (or blank spaces) based on the positions of the four outer corners.
+    - For each square:
+        - First determine if the square is empty or not using an apporpriate threshold
+        - If not empty, compare to feature extracted 2D-arryas of numbers 1-9 and find the best match.
+    - The output of this step should be a 9x9 2D-matrix of lists, where each lists contains the possible numbers for that positions. Thus, given numbers have only one element in the list while the empty squares have nine.
+
+- Solve Sudoku
+    - Repeat until solved, that is until all squares have a list lenght of one.
+        - For each square:
+            - If lenght of list is one, skip since this square is already given or solved.
+            - Check the horizontal line and remove all given/solved numbers present from the list.
+            - Check the vertical line and remove all given/solved numbers present from the list.
+            - Check the 3x3 square and remove all given/solved numbers present from the list.  
+    - If this gets stuck in an infinite loop, we need to add more complicated logic to solve the Sudoku. To be determined.
