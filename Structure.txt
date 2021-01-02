@@ -30,3 +30,19 @@ Sudoku solver
             - Check the vertical line and remove all given/solved numbers present from the list.
             - Check the 3x3 square and remove all given/solved numbers present from the list.  
     - If this gets stuck in an infinite loop, we need to add more complicated logic to solve the Sudoku. To be determined.
+
+
+Läget
+3 december:
+Har börjat med funktionen sobel_convolution, gjord för att falta med sobel filter
+5 december:
+verkar vara något krux med uint8 i sobel faltningen. Dessutom: faltningen tar ett par sekunder även på en bild som bara är 600 x 618 pixlar...
+16 december:
+Faltningen funkar, likaså att hitta lower left corner. Men att hitta ett enda hörn tar några minuter, behöver snabbas upp. Kolla bara 1/4 av bilden och använd info från tidigare hittade hörn för att leta på rätt ställe för de återstående...
+Parallellt försöker jag göra en "heatmap" kallad diff_array men talen blir för stora för att det ska gå att se något annat än vitt i bilden. Behöver normaliseras, hur gör man det med en numpy array? Använd best_score som högsta värde och 0 som lägsta!
+20 december:
+Nu finns det lagrade, som numpy-arrayer, faltade bilder av top left och top right corner från sudoku_far_away nedskalad till 300x400. Hörnen är bara 10x10 pixlar, med det kanske räcker? Den hittar i alla fall när jag försöker hitta hörnen igen på samma bild. Men på Sudoku2 hittar den bara top left corner än så länge. Problemet är nog att själva sodkuot är dubbelt så stort på sudoku2.jpg som på sudoku_far_away.jpg och då blir även hörnen olika skala.
+
+26 december:
+Det börjar likna något. Testar att hitta hörnen på olika bilder med varierande framgång. Senaste försöket är med 16x16-hörn från sudoku2. Behöver differientiera mall-hörnen (för att kunna testa med olika på samma bild) och börja köra lite mer 
+storskalig testning för att se vilka parametrar som ger bäst resultat. Jag behöver också testa med en ny bild med mitt-emellan-inzoomning av själva sudokut, istället för det två olika extremlägen jag testar med nu (sudoku2.jpg och sudoku_far_away.jpg)
