@@ -46,3 +46,11 @@ Nu finns det lagrade, som numpy-arrayer, faltade bilder av top left och top righ
 26 december:
 Det börjar likna något. Testar att hitta hörnen på olika bilder med varierande framgång. Senaste försöket är med 16x16-hörn från sudoku2. Behöver differientiera mall-hörnen (för att kunna testa med olika på samma bild) och börja köra lite mer 
 storskalig testning för att se vilka parametrar som ger bäst resultat. Jag behöver också testa med en ny bild med mitt-emellan-inzoomning av själva sudokut, istället för det två olika extremlägen jag testar med nu (sudoku2.jpg och sudoku_far_away.jpg)
+
+2 januari:
+Hörnen funkar nu rimligt bra på de bilder jag testat utom far_way, där vi hittar tre av fyra hörn. Jobbar med evaluate_corners. Oklart hur stor margin of error vi ska acceptera för hörnen, på sudoku_extrabild är pappret lite vikt vilket gör skillnaderna mellan hörnen rätt stor även om det algoritmen hittar rätt position.
+2 januari, kväll:
+Nu ger den en approximation av det fjärde hörnet om bara tre är rätt. Oklart om detta hjälper oss eller inte, det återstår att se när vi testar att identifiera siffrorna i cellerna...
+6 januari:
+Segmenteringen fungerar så bra som den kan utan att göra någon 4 point transform. Saknas ett hörn blir det nog lite konstigt, men kanske går det ändå, vi får se.
+Nästa steg blir att i varje segmenterad bild (som har mer än ett visst medeltal i pixelvärde och därmed inte räknas som tom) köra en threshold och sedan jämföra med de nio olika siffrorna det kan vara. Dessa borde även flytta runt lite i rutan för att göra träffsäkerheten bättre. 

@@ -1,5 +1,6 @@
 import argparse
-from sudoku_solver import handle_image, sobel_convolution, find_corners
+import sudoku_solver
+#from sudoku_solver import handle_image, sobel_convolution, find_corners, evaluate_corners, segment_cells
 
 def handle_arguments():
     print("handling arguments")
@@ -11,12 +12,21 @@ def handle_arguments():
 
     print(infile)
 
-    image_array = handle_image(infile)
+    sudokuImage = sudoku_solver.SudokuImage(infile)
 
-    result_array = sobel_convolution(image_array)
+    image_array = sudokuImage.handle_image()
+
+    #image_array = handle_image(infile)
+
+    gradient_array = sudoku_solver.sobel_convolution(image_array)
  
-    find_corners(result_array)
-
+    corner_position_list = sudoku_solver.find_corners(gradient_array)
+    corner_position_list = sudoku_solver.evaluate_corners(corner_position_list)
+    normalized_image = sudokuImage.normalize_image(infile, corner_position_list, 500)
+    #gradient_array = sudoku_solver.sobel_convolution(normalized_image)
+    sudoku_solver.segment_cells2(normalized_image, 100)
+    #segment_cells(result_array, result_array, corner_position_list)
+    
 
 if __name__=='__main__':
     handle_arguments()
