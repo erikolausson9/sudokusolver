@@ -99,7 +99,7 @@ class SudokuImage:
 
 
 def sobel_convolution(input_array):
-    print(f"Starting sobel convultion on {len(input_array)} x {len(input_array[0])} array ")
+    #print(f"Starting sobel convultion on {len(input_array)} x {len(input_array[0])} array ")
 
     width = len(input_array[0])
     height = len(input_array)
@@ -122,10 +122,10 @@ def sobel_convolution(input_array):
 
             #print(f" row: {row} and column: {column}")
 
-    print("done")
+    #print("done")
     result_array = numpy.array(result_array)
     result_im = Image.fromarray(result_array)
-    result_im.show()
+    #result_im.show()
 
     #save_numpy_array(result_array, 'lower_left_corner_intermediate_13_13.npy')
 
@@ -218,9 +218,12 @@ def sub_image_search(input_array, sub_image_path, start_row, end_row, start_col,
     best_y = 0
 
     diff_array = [[0]*(width-sub_image_width) for ii in range((height-sub_image_height))]
-
+    #step = 2
     for row in range(height-sub_image_height):
-        print(f"Processing row: {row} of {end_row-start_row-sub_image_height}")
+        
+        if row%10==0:
+            print(f"Processing row: {row} of {end_row-start_row-sub_image_height}")
+        
         current_row = start_row + row + sub_image_height/2
         for col in range(width-sub_image_width):
             current_col = start_col + col + sub_image_width/2
@@ -483,16 +486,22 @@ def segment_cells2(normalized_array, threshold):
     #load list of thresholded images of the numbers to compare to:
     true_numbers = []
     for ii in range(1,10):
-        path =  'numbers/number_' + str(ii) + '.npy'
+        path =  'numbers2/number_' + str(ii) + '.npy'
         with open(path,'rb') as f:
             true_numbers.append(numpy.load(f))
 
+    true_gradient_numbers = []
+    for ii in range(1,10):
+        path =  'numbers2/gradient_' + str(ii) + '.npy'
+        with open(path,'rb') as f:
+            true_gradient_numbers.append(numpy.load(f))
+
         
-    number_im = Image.fromarray(true_numbers[0])
-    number_im.show()    
+    #number_im = Image.fromarray(true_gradient_numbers[3])
+    #number_im.show()    
 
 
-    for cell_row in range(2,7):
+    for cell_row in range(0,9):
         for cell_col in range(0,9):
     
             current_cell = normalized_array[cell_row*cell_width+cell_margin:(cell_row+1)*cell_width-cell_margin, cell_col*cell_width+cell_margin:(cell_col+1)*cell_width-cell_margin]
@@ -500,22 +509,71 @@ def segment_cells2(normalized_array, threshold):
             cell_mean = numpy.mean(numpy.mean(current_cell))
             
             current_cell = gaussian_blur(current_cell)
+            current_cell_for_gradient = current_cell.copy()
             current_cell[current_cell>cell_mean*0.77] = 255
             current_cell[current_cell<=cell_mean*0.77]=0
             cell_sample_margin = int(round(cell_width*0.35))
             cell_sample = current_cell[cell_sample_margin:cell_width-cell_sample_margin, cell_sample_margin:cell_width-cell_sample_margin]
-            print(f"row: {cell_row} col: {cell_col} sample_mean: {numpy.mean(numpy.mean(cell_sample))}")
+            #print(f"row: {cell_row} col: {cell_col} sample_mean: {numpy.mean(numpy.mean(cell_sample))}")
             if numpy.mean(numpy.mean(cell_sample))<250:
-                #cell_im = Image.fromarray(current_cell)
-                #cell_im.show()
-                print(f"Trying to identify number in row: {cell_row+1} and col: {cell_col+1}")
-                identify_number(current_cell, true_numbers)
-    #normalized_array[normalized_array>threshold] = 255
-    #normalized_array[normalized_array<=threshold]=0 
+                start_row = 0
+                current_row = current_cell[0,:]
+                number_of_black_pixels = len(numpy.where(current_row<250)[0])
+                while number_of_black_pixels < 2:
+                    start_row += 1
+                    current_row = current_cell[start_row, :]
+                    number_of_black_pixels = len(numpy.where(current_row<250)[0])
+                start_col = 0
+                current_col = current_cell[:,0]
+                number_of_black_pixels = len(numpy.where(current_col<250)[0])
+                while number_of_black_pixels < 2:
+                    start_col += 1
+                    current_col = current_cell[:, start_col]
+                    number_of_black_pixels = len(numpy.where(current_col<250)[0])
+                #cut out for simple threshold
+                normalized_cell = current_cell[start_row:start_row+24,start_col:start_col+20]
 
-    #[[0 if pixel <120 else 255 for pixel in line] for line in normalized_array]
-    #result_image = Image.fromarray(normalized_array)
-    #result_image.show()
+                #cut out for gradient threshold
+                start_row = max(0, (start_row-2))
+                start_col = max(0, (start_col-2))
+                normalized_gradient_cell = current_cell_for_gradient[start_row:start_row+26, start_col:start_col+22]
+                normalized_gradient_cell = sobel_convolution(normalized_gradient_cell)
+                gradient_cell_im = Image.fromarray(normalized_gradient_cell)
+                #gradient_cell_im.show()
+
+                gradient_cell_mean = numpy.mean(numpy.mean(normalized_gradient_cell))
+                normalized_gradient_cell[normalized_gradient_cell>gradient_cell_mean*0.85] = 255
+                normalized_gradient_cell[normalized_gradient_cell<=gradient_cell_mean*0.85] = 0
+
+                gradient_cell_im = Image.fromarray(normalized_gradient_cell)
+                #gradient_cell_im.show()
+
+                #The following code is only used when saving images of numbers for training etc. 
+                save_number = False
+                #save_number = True
+                if save_number:
+                    save_numpy_array(normalized_cell, f"numbers2/row_{cell_row}_col_{cell_col}.npy")
+                    save_numpy_array(normalized_gradient_cell, f"numbers2/gradient_row_{cell_row}_col_{cell_col}.npy")
+                    cell_im = Image.fromarray(normalized_cell)
+                    gradient_cell_im = Image.fromarray(normalized_gradient_cell)
+                    filename = f"numbers2/row_{cell_row}_col_{cell_col}.jpg"
+                    gradient_filename = f"numbers2/gradient_row_{cell_row}_col_{cell_col}.jpg"
+                    if cell_im.mode != 'RGB':
+                        cell_im = cell_im.convert('RGB')
+                    if gradient_cell_im.mode != 'RGB':
+                        gradient_cell_im = gradient_cell_im.convert('RGB')
+
+                    cell_im.save(filename)
+                    gradient_cell_im.save(gradient_filename)
+                    cell_im.show()
+                    
+                
+                
+                print(f"Trying to identify number in row: {cell_row} and col: {cell_col}")
+                identify_number(normalized_cell, true_numbers)
+                print(f"Trying to identify number via gradient in row: {cell_row} and col: {cell_col} ")
+                identify_number(normalized_gradient_cell, true_gradient_numbers)
+    
 
 def identify_number(single_cell_input_array, true_numbers):
     #single_cell_input_array = [[0 if single_cell < 150 else 255 for single_cell in row] for row in single_cell_input_array]
@@ -527,30 +585,46 @@ def identify_number(single_cell_input_array, true_numbers):
     sub_image_height = len(true_numbers[0])
     sub_image_width = len(true_numbers[0][0])
 
-    start_row = int((height-sub_image_height)/2)
-    start_col = int((width-sub_image_width)/2)
+    if height != sub_image_height or width != sub_image_width:
+        print(f"Error: image and sub_image dimensions don't match. Height: {height} sub_image_height: {sub_image_height} Width: {width} sub_image_width: {sub_image_width}")
+    #start_row = int((height-sub_image_height)/2)
+    #start_col = int((width-sub_image_width)/2)
     
 
     #print(f"height: {height} width: {width} sub_image_height: {sub_image_height} sub_image_width: {sub_image_width}")
 
     best_score = 100000000
+    second_best_score = best_score
     guess = 0
+    second_guess = 0
+
+    #number_im = Image.fromarray(true_numbers[8])
+    #number_im.show(title="Loaded sub_image")
 
     for number in range(len(true_numbers)):
         #number_im = Image.fromarray(true_numbers[number])
         #number_im.show(title="Loaded sub_image")
-        for row in range(0, height-sub_image_height):
-            for col in range(0, width - sub_image_width):
+        
+        difference_matrix = abs(single_cell_input_array-true_numbers[number])
+        difference = sum(sum(difference_matrix))
 
-                difference_matrix = abs(single_cell_input_array[row:row+sub_image_height, col:col+sub_image_width]-true_numbers[number])
-                difference = sum(sum(difference_matrix))
+        #print(f"true number: {number+1} difference: {difference}")
 
-                if difference < best_score:
-                    best_score = difference
-                    guess = number+1
+        if difference < best_score:
+            second_best_score = best_score
+            second_guess = guess
+            best_score = difference
+            guess = number+1
+            #print(f"New guess: {guess} difference: {difference} and prev best_score: {second_best_score}")
+        elif difference < second_best_score:
+            #print(f"New second_guess without first guess: {number+1} difference: {difference} and prev second_best_score: {second_best_score}")
+
+            second_best_score = difference
+            second_guess = number+1
+        
     
     
-    print(f"Guess: {guess}")
+    print(f"Guess: {guess} and second guess: {second_guess}")
 
 
     #result_im = Image.fromarray(sub_image)

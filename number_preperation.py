@@ -31,7 +31,50 @@ def prepare_numbers():
     #(width, height) = image_file.size
     #print(f"width: {width}")
 
+def prepare_numbers2():
+        
+    path = "numbers2/gradient_"
+
+    for ii in range(1,10):
+        first_file_path = path + str(ii)+"_1.npy"
+        second_file_path = path + str(ii)+"_2.npy"
+        third_file_path = path + str(ii)+"_3.npy"
+        with open(first_file_path, 'rb') as file_1:
+            first_array = numpy.load(file_1)
+        with open(second_file_path, 'rb') as file_2:
+            second_array = numpy.load(file_2)
+        with open(third_file_path, 'rb') as file_3:
+            third_array = numpy.load(file_3)
+
+        width = len(first_array[0])
+        height = len(first_array)
+
+        print(f"width: {width} height: {height}")
+
+        result_array = [[0]*width for ii in range(height)]
+        print(f"result_array width: {len(result_array[0])}  height: {len(result_array)}")
+
+        for row in range(height):
+            for col in range(width):
+                if (first_array[row][col] + second_array[row][col] + third_array[row][col])>260:
+                    result_array[row][col] = 255
+                else:
+                    result_array[row][col] = 0
+            
+        filepath = path + str(ii) +'.npy'
+
+        with open (filepath, 'wb') as f:
+            numpy.save(f, result_array)
+        
+        result_array = numpy.array(result_array)
+        result_im = Image.fromarray(result_array)
+        result_im.show()
+
+
+
+
 
 
 if __name__=="__main__":
-    prepare_numbers()
+    #prepare_numbers()
+    prepare_numbers2()
