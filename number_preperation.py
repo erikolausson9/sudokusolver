@@ -33,7 +33,7 @@ def prepare_numbers():
 
 def prepare_numbers2():
         
-    path = "numbers2/gradient_"
+    path = "numbers4/gradient_"
 
     for ii in range(1,10):
         first_file_path = path + str(ii)+"_1.npy"
@@ -54,12 +54,15 @@ def prepare_numbers2():
         result_array = [[0]*width for ii in range(height)]
         print(f"result_array width: {len(result_array[0])}  height: {len(result_array)}")
 
+        #result_array = int((first_array+second_array+third_array)/3)
+
         for row in range(height):
             for col in range(width):
-                if (first_array[row][col] + second_array[row][col] + third_array[row][col])>260:
-                    result_array[row][col] = 255
-                else:
-                    result_array[row][col] = 0
+                result_array[row][col] = int(round((first_array[row][col] + second_array[row][col] + third_array[row][col])/3))
+                #if (first_array[row][col] + second_array[row][col] + third_array[row][col])>260:
+                #    result_array[row][col] = 255
+                #else:
+                #    result_array[row][col] = 0
             
         filepath = path + str(ii) +'.npy'
 

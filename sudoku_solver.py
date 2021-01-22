@@ -381,7 +381,7 @@ def rectify_corner(corner_position_list, number_of_secure_corners):
 
 
 
-
+"""
 def segment_cells(input_array, gradient_array, corner_position_list):
 
     #load list of gradient images of the numbers to compare to:
@@ -476,6 +476,7 @@ def segment_cells(input_array, gradient_array, corner_position_list):
 
     result_image = Image.fromarray(input_array)
     result_image.show()
+"""
 
 def segment_cells2(normalized_array, threshold):
     
@@ -492,7 +493,7 @@ def segment_cells2(normalized_array, threshold):
 
     true_gradient_numbers = []
     for ii in range(1,10):
-        path =  'numbers2/gradient_' + str(ii) + '.npy'
+        path =  'numbers4/gradient_' + str(ii) + '.npy'
         with open(path,'rb') as f:
             true_gradient_numbers.append(numpy.load(f))
 
@@ -510,12 +511,12 @@ def segment_cells2(normalized_array, threshold):
             
             current_cell = gaussian_blur(current_cell)
             current_cell_for_gradient = current_cell.copy()
-            current_cell[current_cell>cell_mean*0.77] = 255
-            current_cell[current_cell<=cell_mean*0.77]=0
+            current_cell[current_cell>cell_mean*0.81] = 255
+            current_cell[current_cell<=cell_mean*0.81]=0
             cell_sample_margin = int(round(cell_width*0.35))
             cell_sample = current_cell[cell_sample_margin:cell_width-cell_sample_margin, cell_sample_margin:cell_width-cell_sample_margin]
             #print(f"row: {cell_row} col: {cell_col} sample_mean: {numpy.mean(numpy.mean(cell_sample))}")
-            if numpy.mean(numpy.mean(cell_sample))<250:
+            if numpy.mean(numpy.mean(cell_sample))<250: #This is true if we have a number in the current cell
                 start_row = 0
                 current_row = current_cell[0,:]
                 number_of_black_pixels = len(numpy.where(current_row<250)[0])
@@ -523,6 +524,7 @@ def segment_cells2(normalized_array, threshold):
                     start_row += 1
                     current_row = current_cell[start_row, :]
                     number_of_black_pixels = len(numpy.where(current_row<250)[0])
+    
                 start_col = 0
                 current_col = current_cell[:,0]
                 number_of_black_pixels = len(numpy.where(current_col<250)[0])
@@ -530,47 +532,75 @@ def segment_cells2(normalized_array, threshold):
                     start_col += 1
                     current_col = current_cell[:, start_col]
                     number_of_black_pixels = len(numpy.where(current_col<250)[0])
+    
+                end_row = len(current_cell)
+                current_row = current_cell[-1,:]
+                number_of_black_pixels = len(numpy.where(current_row<250)[0])
+                while number_of_black_pixels < 2:
+                    end_row -= 1
+                    current_row = current_cell[end_row, :]
+                    number_of_black_pixels = len(numpy.where(current_row<250)[0])
+                
+                end_col = len(current_cell[0])
+                current_col = current_cell[:, -1]
+                number_of_black_pixels = len(numpy.where(current_col<250)[0])
+                while number_of_black_pixels < 2:
+                    end_col -= 1
+                    current_col = current_cell[:, end_col]
+                    number_of_black_pixels = len(numpy.where(current_col<250)[0])
                 #cut out for simple threshold
-                normalized_cell = current_cell[start_row:start_row+24,start_col:start_col+20]
+                normalized_cell = current_cell[start_row:end_row+1,start_col:end_col+1]
+                normalized_cell = Image.fromarray(normalized_cell)
+                #normalized_cell.show()
+                normalized_cell = normalized_cell.resize((16,22))
+                
+                #normalized_cell.show()
 
-                #cut out for gradient threshold
+                #cut out for gradient number image
                 start_row = max(0, (start_row-2))
                 start_col = max(0, (start_col-2))
-                normalized_gradient_cell = current_cell_for_gradient[start_row:start_row+26, start_col:start_col+22]
+                end_row = min(len(current_cell), (end_row+3))
+                end_col = min(len(current_cell), (end_col+3))
+                normalized_gradient_cell = current_cell_for_gradient[start_row:end_row, start_col:end_col]
                 normalized_gradient_cell = sobel_convolution(normalized_gradient_cell)
+                #print(f"Normalized gradient cell max: {normalized_gradient_cell.max()} and min: {normalized_gradient_cell.min()}")
+                #gradient_cell_mean = numpy.mean(numpy.mean(normalized_gradient_cell))
+                #normalized_gradient_cell[normalized_gradient_cell>gradient_cell_mean*0.85] = 255
+                #normalized_gradient_cell[normalized_gradient_cell<=gradient_cell_mean*0.85] = 0
+                normalized_gradient_cell = normalized_gradient_cell/(normalized_gradient_cell.max()/255.0) #This will normalize the array to [0,255] with highest value given to (x,y) of best match
+                #print(f"New normalized gradient cell max: {normalized_gradient_cell.max()} and min: {normalized_gradient_cell.min()}")
                 gradient_cell_im = Image.fromarray(normalized_gradient_cell)
                 #gradient_cell_im.show()
-
-                gradient_cell_mean = numpy.mean(numpy.mean(normalized_gradient_cell))
-                normalized_gradient_cell[normalized_gradient_cell>gradient_cell_mean*0.85] = 255
-                normalized_gradient_cell[normalized_gradient_cell<=gradient_cell_mean*0.85] = 0
-
-                gradient_cell_im = Image.fromarray(normalized_gradient_cell)
+                gradient_cell_im = gradient_cell_im.resize((18,24))
+                #gradient_cell_im.show()
+                normalized_gradient_cell = numpy.asarray(gradient_cell_im)
+                
+                #gradient_cell_im = Image.fromarray(normalized_gradient_cell)
                 #gradient_cell_im.show()
 
                 #The following code is only used when saving images of numbers for training etc. 
                 save_number = False
                 #save_number = True
                 if save_number:
-                    save_numpy_array(normalized_cell, f"numbers2/row_{cell_row}_col_{cell_col}.npy")
-                    save_numpy_array(normalized_gradient_cell, f"numbers2/gradient_row_{cell_row}_col_{cell_col}.npy")
-                    cell_im = Image.fromarray(normalized_cell)
+                    #save_numpy_array(normalized_cell, f"numbers3/row_{cell_row}_col_{cell_col}.npy")
+                    save_numpy_array(normalized_gradient_cell, f"numbers4/gradient_row_{cell_row}_col_{cell_col}.npy")
+                    #cell_im = Image.fromarray(normalized_cell)
                     gradient_cell_im = Image.fromarray(normalized_gradient_cell)
-                    filename = f"numbers2/row_{cell_row}_col_{cell_col}.jpg"
-                    gradient_filename = f"numbers2/gradient_row_{cell_row}_col_{cell_col}.jpg"
-                    if cell_im.mode != 'RGB':
-                        cell_im = cell_im.convert('RGB')
+                    #filename = f"numbers3/row_{cell_row}_col_{cell_col}.jpg"
+                    gradient_filename = f"numbers4/gradient_row_{cell_row}_col_{cell_col}.jpg"
+                    #if cell_im.mode != 'RGB':
+                    #    cell_im = cell_im.convert('RGB')
                     if gradient_cell_im.mode != 'RGB':
                         gradient_cell_im = gradient_cell_im.convert('RGB')
 
-                    cell_im.save(filename)
+                    #cell_im.save(filename)
                     gradient_cell_im.save(gradient_filename)
-                    cell_im.show()
+                    #cell_im.show()
                     
                 
                 
-                print(f"Trying to identify number in row: {cell_row} and col: {cell_col}")
-                identify_number(normalized_cell, true_numbers)
+                #print(f"Trying to identify number in row: {cell_row} and col: {cell_col}")
+                #identify_number(normalized_cell, true_numbers)
                 print(f"Trying to identify number via gradient in row: {cell_row} and col: {cell_col} ")
                 identify_number(normalized_gradient_cell, true_gradient_numbers)
     
@@ -598,14 +628,17 @@ def identify_number(single_cell_input_array, true_numbers):
     guess = 0
     second_guess = 0
 
-    #number_im = Image.fromarray(true_numbers[8])
+    #number_im = Image.fromarray(true_numbers[1])
     #number_im.show(title="Loaded sub_image")
+    #number_im = Image.fromarray(true_numbers[2])
+    #number_im.show()
 
     for number in range(len(true_numbers)):
         #number_im = Image.fromarray(true_numbers[number])
         #number_im.show(title="Loaded sub_image")
         
-        difference_matrix = abs(single_cell_input_array-true_numbers[number])
+        #difference_matrix = abs(single_cell_input_array-true_numbers[number])
+        difference_matrix = (single_cell_input_array-true_numbers[number])*(single_cell_input_array-true_numbers[number])
         difference = sum(sum(difference_matrix))
 
         #print(f"true number: {number+1} difference: {difference}")
@@ -624,7 +657,7 @@ def identify_number(single_cell_input_array, true_numbers):
         
     
     
-    print(f"Guess: {guess} and second guess: {second_guess}")
+    print(f"Guess: {guess} and second guess: {second_guess} diff percentage: {round(second_best_score/best_score,2)}")
 
 
     #result_im = Image.fromarray(sub_image)
