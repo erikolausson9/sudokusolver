@@ -5,7 +5,7 @@ import sudoku_solver
 def handle_arguments():
     print("handling arguments")
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_image", default = "sudoku_intermediate.jpg", type=str, help="File path to image of sudoku")
+    parser.add_argument("-i", "--input_image", default = "sudoku2.jpg", type=str, help="File path to image of sudoku")
 
     args = parser.parse_args()
     infile = args.input_image
@@ -21,7 +21,7 @@ def handle_arguments():
     gradient_array = sudoku_solver.sobel_convolution(image_array)
  
     corner_position_list = sudoku_solver.find_corners(gradient_array)
-    corner_position_list = sudoku_solver.evaluate_corners(corner_position_list)
+    corner_position_list = sudoku_solver.evaluate_corners(gradient_array, corner_position_list)
     normalized_image = sudokuImage.normalize_image(infile, corner_position_list, 500)
     #gradient_array = sudoku_solver.sobel_convolution(normalized_image)
     sudoku_solver.segment_cells2(normalized_image, 100)

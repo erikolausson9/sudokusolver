@@ -270,7 +270,7 @@ def sub_image_search(input_array, sub_image_path, start_row, end_row, start_col,
 
     return (best_total_row, best_total_col) #return tuple of row and col for best guess
 
-def evaluate_corners(corner_position_list):
+def evaluate_corners(input_array, corner_position_list):
 
     if (len(corner_position_list)<4):
         print("Error: missing corner in corner_position_list")
@@ -315,9 +315,9 @@ def evaluate_corners(corner_position_list):
     elif corner_level_count[2] == 4:
         print("Hurray, all four corners detected without problems.")
     elif corner_level_count[2]==2 and corner_level_count[1]==2: #only one corner is incorrectly placed. This we can correct.
-        corner_position_list = rectify_corner(corner_position_list, corner_level_count[2])
+        corner_position_list = rectify_corner(input_array, corner_position_list, corner_level_count[2], margin_of_error)
     elif corner_level_count[2]==1 and corner_level_count[1]==2: #only one corner is incorrectly placed. This we can correct.
-        corner_position_list = rectify_corner(corner_position_list, corner_level_count[2])
+        corner_position_list = rectify_corner(input_array, corner_position_list, corner_level_count[2], margin_of_error)
     else:
         print("Weird sideCounts. Bailing out!")
         sys.exit()
@@ -327,7 +327,7 @@ def evaluate_corners(corner_position_list):
 
     return corner_position_list
 
-def rectify_corner(corner_position_list, number_of_secure_corners):
+def rectify_corner(input_array, corner_position_list, number_of_secure_corners, margin_of_error):
     """
     Auxiliary function used by evaluate_corners to rectify one incorrectly placed corner
 
@@ -338,6 +338,32 @@ def rectify_corner(corner_position_list, number_of_secure_corners):
     if number_of_secure_corners == 1:
         #only one secure corner. This means the incorrect corner is always the opposite one
 
+        if corner_position_list[0].sideCount==2:
+            guess_row = corner_position_list[3].row
+            guess_col = corner_position_list[1].col
+            (corner_position_list[2].row, corner_position_list[2].col)=\
+                    sub_image_search(input_array, 'lower_right_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+        elif corner_position_list[1].sideCount==2:
+            guess_row = corner_position_list[2].row
+            guess_col = corner_position_list[0].col
+            (corner_position_list[3].row, corner_position_list[3].col) = \
+                    sub_image_search(input_array, 'lower_left_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+        elif corner_position_list[2].sideCount==2:
+            guess_row = corner_position_list[1].row
+            guess_col = corner_position_list[3].col
+            (corner_position_list[0].row, corner_position_list[0].col) = \
+                    sub_image_search(input_array, 'top_left_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+        else:
+            guess_row = corner_position_list[0].row
+            guess_col = corner_position_list[2].col
+            (corner_position_list[1].row, corner_position_list[1].col)=\
+                    sub_image_search(input_array, 'top_right_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+
+        """
         for ii in range(4):
             if corner_position_list[ii].sideCount == 2:
                 if ii%2==0:
@@ -346,10 +372,72 @@ def rectify_corner(corner_position_list, number_of_secure_corners):
                 else:
                     corner_position_list[(ii+2)%4].col = corner_position_list[(ii+3)%4].col
                     corner_position_list[(ii+2)%4].row = corner_position_list[(ii+1)%4].row
-
+        """
     else:
         #two secure corners, this means we have to look at distances as well to decide which corner is incorrect
 
+        if corner_position_list[0].sideCount ==2 and corner_position_list[1].sideCount==2:
+            secure_side_length = corner_position_list[0].sideLength
+            if abs(secure_side_length-corner_position_list[3].sideLength)<abs(secure_side_length-corner_position_list[1].sideLength):
+                guess_row = corner_position_list[3].row
+                guess_col = corner_position_list[1].col
+                (corner_position_list[2].row, corner_position_list[2].col)=\
+                    sub_image_search(input_array, 'lower_right_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+            else:
+                guess_row = corner_position_list[2].row
+                guess_col = corner_position_list[1].col
+                (corner_position_list[3].row, corner_position_list[3].col) = \
+                    sub_image_search(input_array, 'lower_left_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+
+        elif corner_position_list[1].sideCount ==2 and corner_position_list[2].sideCount==2:
+            secure_side_length = corner_position_list[1].sideLength
+            if abs(secure_side_length-corner_position_list[0].sideLength)<abs(secure_side_length-corner_position_list[2].sideLength):
+                guess_row = corner_position_list[2].row
+                guess_col = corner_position_list[0].col
+                (corner_position_list[3].row, corner_position_list[3].col)=\
+                    sub_image_search(input_array, 'lower_left_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+            else:
+                guess_row = corner_position_list[1].row
+                guess_col = corner_position_list[3].col
+                (corner_position_list[0].row, corner_position_list[0].col) = \
+                    sub_image_search(input_array, 'top_left_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+
+        elif corner_position_list[2].sideCount ==2 and corner_position_list[3].sideCount==2:
+            secure_side_length = corner_position_list[2].sideLength
+            if abs(secure_side_length-corner_position_list[2].sideLength)<abs(secure_side_length-corner_position_list[1].sideLength):
+                guess_row = corner_position_list[0].row
+                guess_col = corner_position_list[2].col
+                (corner_position_list[1].row, corner_position_list[1].col)=\
+                    sub_image_search(input_array, 'top_right_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+            else:
+                guess_row = corner_position_list[1].row
+                guess_col = corner_position_list[3].col
+                (corner_position_list[0].row, corner_position_list[0].col) = \
+                    sub_image_search(input_array, 'top_left_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+
+        else: #secure corners have index 3 and 0
+            
+            secure_side_length = corner_position_list[3].sideLength
+            if abs(secure_side_length-corner_position_list[0].sideLength)<abs(secure_side_length-corner_position_list[2].sideLength):
+                guess_row = corner_position_list[3].row
+                guess_col = corner_position_list[1].col
+                (corner_position_list[2].row, corner_position_list[2].col)=\
+                    sub_image_search(input_array, 'lower_right_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+            else:
+                guess_row = corner_position_list[0].row
+                guess_col = corner_position_list[2].col
+                (corner_position_list[1].row, corner_position_list[1].col) = \
+                    sub_image_search(input_array, 'top_right_corner_intermediate_13_13.npy', \
+                        max(0, guess_row-margin_of_error), min(len(input_array),guess_row+margin_of_error), max(0, guess_col-margin_of_error), min(len(input_array[0]), guess_col+margin_of_error))
+
+        """    
         for ii in range(4):
             next_index = (ii+1)%4
 
@@ -370,6 +458,7 @@ def rectify_corner(corner_position_list, number_of_secure_corners):
                         corner_position_list[(ii+2)%4].row = corner_position_list[(ii+1)%4].row
                         corner_position_list[(ii+2)%4].col = corner_position_list[(ii+3)%4].col
 
+    """
     for ii in range(4):
         #update the sideLengths given the new corner_positions
         if ii%2==0:
