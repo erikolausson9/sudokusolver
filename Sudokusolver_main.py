@@ -24,8 +24,9 @@ def handle_arguments():
     corner_position_list = sudoku_solver.evaluate_corners(gradient_array, corner_position_list)
     normalized_image = sudokuImage.normalize_image(infile, corner_position_list, 500)
     #gradient_array = sudoku_solver.sobel_convolution(normalized_image)
-    sudoku_solver.segment_cells2(normalized_image, 100)
-    #segment_cells(result_array, result_array, corner_position_list)
+    solution_matrix = sudoku_solver.segment_cells(normalized_image)
+    sudoku_solver.print_solution_matrix(solution_matrix)
+    sudoku_solver.solve_sudoku(solution_matrix)
     
 
 if __name__=='__main__':
