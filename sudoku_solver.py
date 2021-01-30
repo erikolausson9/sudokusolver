@@ -449,6 +449,7 @@ def segment_cells(normalized_array):
 
     #Create a solution-matrix to store the found numbers
     solution_matrix = [[0]*9 for ii in range(9)]
+    solution_matrix = numpy.asarray(solution_matrix)
 
     for cell_row in range(0,9):
         for cell_col in range(0,9):
@@ -526,7 +527,7 @@ def segment_cells(normalized_array):
                 gradient_cell_im = gradient_cell_im.resize((18,24))
                 normalized_gradient_cell = numpy.asarray(gradient_cell_im)
               
-                solution_matrix[cell_row][cell_col] = identify_number(normalized_gradient_cell, true_gradient_numbers)
+                solution_matrix[cell_row,cell_col] = identify_number(normalized_gradient_cell, true_gradient_numbers)
                 
                 #Use save_number to save image and numpy array for training purposes etc. 
                 #save_number(normalized_gradient_cell, 'numbers5', cell_row, cell_col, guess)
@@ -591,71 +592,164 @@ def identify_number(single_cell_input_array, true_numbers):
 
     return guess
 
+class SudokuMatrix:
+    def __init__(self, solution_matrix):
+        self.solution_matrix = solution_matrix.copy()
 
-def print_solution_matrix(solution_matrix):
-    print("Solution matrix: ")
-    print('-------------------')
-    for row in range(9):
-        #print('|', end='')
-        #for col in range(9):
-        #    if solution_matrix[row][col]>0:
-        #        print(solution_matrix[row][col], end='')
-        #    else:
-        #        print(' ', end='')
-        #    if col%3==2:
-        #        print('|', end='')
-
-        #print(' ')
-        print(f"|{solution_matrix[row][0]} {solution_matrix[row][1]} {solution_matrix[row][2]}|{solution_matrix[row][3]} {solution_matrix[row][4]} {solution_matrix[row][5]}|{solution_matrix[row][6]} {solution_matrix[row][7]} {solution_matrix[row][8]}|")
-        if row%3==2:
-            print('-------------------')
-
-def print_working_matrix(working_matrix):
-
-    print("Working matrix:")
-    print('-----------------')
-    for row in range(9):
-        max_length = 0
-        for col in range(9):
-            if len(working_matrix[row][col])>max_length:
-                max_length = len(working_matrix[row][col])
-
-        for ii in range(max_length):
-            print('|', end='')
-            for col in range(9):
-                
-                if ii<len(working_matrix[row][col]):
-                    print(working_matrix[row][col][ii], end='')
-                else:
-                    print(' ', end='')
-                if col%3==2:
-                    print('|', end='')
-            print()
-
-            
-        print('--------------------')
-
-
-def solve_sudoku(solution_matrix):
-
-    working_matrix = [[0]*9 for ii in range(9)]
-    for row in range(9):
-        for col in range(9):
-            if solution_matrix[row][col]>0:
-                working_matrix[row][col] = [solution_matrix[row][col]]
-            else:
-                working_matrix[row][col] = [1,2,3,4,5,6,7,8,9]
-    
-    print_working_matrix(working_matrix)
-    pass_count = 1
-
-    while 0 in solution_matrix and pass_count <2:
+        self.working_matrix = [[0]*9 for ii in range(9)]
         for row in range(9):
             for col in range(9):
-                for ii in range(len(working_matrix[row][col])):
-                    current_number = working_matrix[row][col][ii]
-                    if current_number in solution_matrix[row][:] or current_number in solution_matrix[:][col]:
-                        working_matrix[row][col].remove(current_number)
-        pass_count += 1
+                if self.solution_matrix[row, col]>0:
+                    self.working_matrix[row][col] = [self.solution_matrix[row, col]]
+                else:
+                    self.working_matrix[row][col] = [1,2,3,4,5,6,7,8,9]
+
+
+    def print_solution_matrix(self):
+        print("Solution matrix: ")
+        print('-------------------')
+        for row in range(9):
+            print(f"|{self.solution_matrix[row,0]} {self.solution_matrix[row,1]} {self.solution_matrix[row,2]}|{self.solution_matrix[row,3]} {self.solution_matrix[row,4]} {self.solution_matrix[row,5]}|{self.solution_matrix[row,6]} {self.solution_matrix[row,7]} {self.solution_matrix[row,8]}|")
+            if row%3==2:
+                print('-------------------')
+
+    def print_working_matrix(self):
+
+        print("Working matrix:")
+        print('Row 0: -----------------')
+        for row in range(9):
+            max_length = 0
+            for col in range(9):
+                if len(self.working_matrix[row][col])>max_length:
+                    max_length = len(self.working_matrix[row][col])
+
+            for ii in range(max_length):
+                print('|', end='')
+                for col in range(9):
+                
+                    if ii<len(self.working_matrix[row][col]):
+                        print(self.working_matrix[row][col][ii], end=' ')
+                    else:
+                        print(' ', end=' ')
+                    if col%3==2:
+                        print('|', end='')
+                print()
+
+            if row<8:    
+                print(f'Row {row+1}: ----------------')
+
+
+    def solve_sudoku(self):
+
+        print("Solving sudoku")
+
+        #working_matrix = [[0]*9 for ii in range(9)]
+        #working_matrix = numpy.asarray(working_matrix)
+        #for row in range(9):
+        #    for col in range(9):
+        #        if solution_matrix[row, col]>0:
+        #            working_matrix[row][col] = [solution_matrix[row, col]]
+        #        else:
+        #            working_matrix[row][col] = [1,2,3,4,5,6,7,8,9]
     
-    print_working_matrix(working_matrix)
+        #print_working_matrix(working_matrix)
+        pass_count = 1
+
+    
+        left_to_solve = 81 #We will never have this many left to solve
+
+        while left_to_solve>0 and pass_count <20:
+            left_to_solve = (self.solution_matrix==0).sum()
+            old_left_to_solve = left_to_solve
+            print(f"pass nr: {pass_count}. Left to solve: {left_to_solve}")
+            for row in range(9):
+                row_step = int(row/3)
+                for col in range(9):
+                    col_step = int(col/3)
+                    if len(self.working_matrix[row][col])>1:
+                        count = 0
+                        while True:
+                            #print(f"row: {row} col: {col} count: {count}")
+                            #print(working_matrix[row][col])
+
+                            if len(self.working_matrix[row][col])<count+1:
+                                break
+                            else:
+                                current_number = self.working_matrix[row][col][count]
+                                #print(f"current_number: {current_number} ii {ii} len(working_matrix): {len(working_matrix[row][col])}")
+                                current_box = self.solution_matrix[row_step*3:(row_step+1)*3, col_step*3:(col_step+1)*3]
+                                if current_number in self.solution_matrix[row,:] or current_number in self.solution_matrix[:,col] or current_number in current_box:
+                                    self.working_matrix[row][col].remove(current_number)
+                                    if len(self.working_matrix[row][col])==1:
+                                        self.solution_matrix[row, col]=self.working_matrix[row][col][0]
+                                        #if solution_matrix[row, col]==9:
+                                        #    print(f"saving a 9 on row {row} and col {col} ")
+                                        
+                                        left_to_solve -= 1
+                                        break
+                                else:
+                                    count += 1
+                
+                           
+            pass_count += 1
+
+            if old_left_to_solve==left_to_solve:
+                print("Working matrix before evaluate rows cols boxes")
+                self.print_working_matrix()
+                #No new numbers found on this pass, move on to evaluating rows, cols and boxes
+                self.evaluate_rows_cols_boxes()
+
+        self.print_working_matrix()
+        self.print_solution_matrix()
+
+    def evaluate_rows_cols_boxes(self):
+        """
+        Auxilliary method used by solve_sudoku to handle part of the logic for finding numbers
+        """
+        print("Evaluating rows, cols and boxes")
+
+        for row in range(9):
+            print(f"Evaluate row: {row}")
+            self.evaluate_cells(row, row+1, 0,9)
+        for col in range(9):
+            print(f"Evaluate col: {col}")
+            self.evaluate_cells(0, 9, col,col+1)
+
+        for row_count in range(0,3):
+            for col_count in range(0,3):
+                print(f"Evaluate box: {row_count*3}{(row_count+1)*3}{col_count*3}{(col_count+1)*3}")
+                self.evaluate_cells(row_count*3, (row_count+1)*3, col_count*3, (col_count+1)*3)
+
+    def evaluate_cells(self, start_row, end_row, start_col, end_col):
+        """
+        Auxilliary method used by evaluate_rows_cols_boxes to avoid code duplication
+        """
+
+        for number in range(1,10):
+            if not number in self.solution_matrix[start_row:end_row, start_col:end_col]:
+                #Only evaluate the numbers not already solved in this area (row, col or box)
+
+                found_only_once = False
+                break_loop = False
+                for row in range(start_row, end_row):
+                    for col in range(start_col, end_col):
+                        if number in self.working_matrix[row][col]:
+                            if found_only_once:
+                                found_only_once = False
+                                break_loop = True
+                                break
+                            else:
+                                found_only_once = True
+                                candidate_row = row
+                                candidate_col = col
+                    if break_loop:
+                        break #break out of both for loops handling row and col
+                
+
+                if found_only_once:
+                    self.solution_matrix[candidate_row, candidate_col] = number
+                    self.working_matrix[candidate_row][candidate_col].clear()
+                    self.working_matrix[candidate_row][candidate_col] = [number]
+                    print(f"found only once: {number} on row: {candidate_row} and col: {candidate_col}")   
+
+        

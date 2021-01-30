@@ -56,3 +56,10 @@ Segmenteringen fungerar så bra som den kan utan att göra någon 4 point transf
 Nästa steg blir att i varje segmenterad bild (som har mer än ett visst medeltal i pixelvärde och därmed inte räknas som tom) köra en threshold och sedan jämföra med de nio olika siffrorna det kan vara. Dessa borde även flytta runt lite i rutan för att göra träffsäkerheten bättre.
 15 januari: bilderna normaliseras rejält nu, vilket gett mycket bättre träffsäkerhet. Men det är fortfarande någon siffra här och där den inte lyckas hitta rätt. Framförallt i soduku_extrabild, men även soduku_intermediate där den verkar har svårt att skilja på 5 och 6. Nästa steg blir väl att försöka normalisera bilderna på siffrorna ännu mer - eller ge upp och gå direkt till tensorflow?
 22 januari: nu har jag 100 procent rätt på sudoku2, sudoku_intermediate och sudoku_extrabild. Sudoku far away normaliseras inte rätt geografiskt, vilket troligen hänger samman med det missade hörnet. Nästa steg blir att få även detta att fungera samt snygga till koden.
+
+29 januari: "allt" funkar vad gäller bildbehandling och bildanalys, har gått vidare till själva sudokulösandet. Att bara lösa genom elimination funkar inte fullt ut, nästa steg blir att utvärdera rader, kolumner och boxar och leta efter siffror som bara kan finnas på ett ställe.
+
+N n 
+Hedwig
+ppppppppppppppppppppppppppppppppppppppp
+M m
