@@ -659,39 +659,14 @@ class SudokuMatrix:
         left_to_solve = 81 #We will never have this many left to solve
 
         while left_to_solve>0 and pass_count <20:
+            pass_count += 1
             left_to_solve = (self.solution_matrix==0).sum()
             old_left_to_solve = left_to_solve
-            print(f"pass nr: {pass_count}. Left to solve: {left_to_solve}")
-            for row in range(9):
-                row_step = int(row/3)
-                for col in range(9):
-                    col_step = int(col/3)
-                    if len(self.working_matrix[row][col])>1:
-                        count = 0
-                        while True:
-                            #print(f"row: {row} col: {col} count: {count}")
-                            #print(working_matrix[row][col])
 
-                            if len(self.working_matrix[row][col])<count+1:
-                                break
-                            else:
-                                current_number = self.working_matrix[row][col][count]
-                                #print(f"current_number: {current_number} ii {ii} len(working_matrix): {len(working_matrix[row][col])}")
-                                current_box = self.solution_matrix[row_step*3:(row_step+1)*3, col_step*3:(col_step+1)*3]
-                                if current_number in self.solution_matrix[row,:] or current_number in self.solution_matrix[:,col] or current_number in current_box:
-                                    self.working_matrix[row][col].remove(current_number)
-                                    if len(self.working_matrix[row][col])==1:
-                                        self.solution_matrix[row, col]=self.working_matrix[row][col][0]
-                                        #if solution_matrix[row, col]==9:
-                                        #    print(f"saving a 9 on row {row} and col {col} ")
-                                        
-                                        left_to_solve -= 1
-                                        break
-                                else:
-                                    count += 1
-                
-                           
-            pass_count += 1
+            print(f"pass nr: {pass_count}. Left to solve: {left_to_solve}")
+            self.eliminate_numbers()
+
+            left_to_solve = (self.solution_matrix==0).sum()
 
             if old_left_to_solve==left_to_solve:
                 print("Working matrix before evaluate rows cols boxes")
@@ -699,12 +674,50 @@ class SudokuMatrix:
                 #No new numbers found on this pass, move on to evaluating rows, cols and boxes
                 self.evaluate_rows_cols_boxes()
 
+                left_to_solve = (self.solution_matrix==0).sum()
+                if old_left_to_solve == left_to_solve:
+                    print("Working matrix before find_matching_pairs:")
+                    self.print_working_matrix()
+                    #No new numbers found on this pass, move on to find matching pairs
+                    self.find_matching_pairs()
+
+
         self.print_working_matrix()
         self.print_solution_matrix()
 
+
+    def eliminate_numbers(self):
+        """
+        First step of solving sudoku: eliminate all numbers already solved in rows, cols and boxes
+        """
+
+        for row in range(9):
+            row_step = int(row/3)
+            for col in range(9):
+                col_step = int(col/3)
+                if len(self.working_matrix[row][col])>1:
+                    count = 0
+                    while True:
+                        #print(f"row: {row} col: {col} count: {count}")
+                        #print(working_matrix[row][col])
+
+                        if len(self.working_matrix[row][col])<count+1:
+                            break
+                        else:
+                            current_number = self.working_matrix[row][col][count]
+                            #print(f"current_number: {current_number} ii {ii} len(working_matrix): {len(working_matrix[row][col])}")
+                            current_box = self.solution_matrix[row_step*3:(row_step+1)*3, col_step*3:(col_step+1)*3]
+                            if current_number in self.solution_matrix[row,:] or current_number in self.solution_matrix[:,col] or current_number in current_box:
+                                self.working_matrix[row][col].remove(current_number)
+                                if len(self.working_matrix[row][col])==1:
+                                    self.solution_matrix[row, col]=self.working_matrix[row][col][0]
+                                    break
+                            else:
+                                count += 1
+
     def evaluate_rows_cols_boxes(self):
         """
-        Auxilliary method used by solve_sudoku to handle part of the logic for finding numbers
+        Second part of solving soduku: evaluate rows, cols and boxes and find numbers that can only be placed in one location
         """
         print("Evaluating rows, cols and boxes")
 
@@ -751,5 +764,74 @@ class SudokuMatrix:
                     self.working_matrix[candidate_row][candidate_col].clear()
                     self.working_matrix[candidate_row][candidate_col] = [number]
                     print(f"found only once: {number} on row: {candidate_row} and col: {candidate_col}")   
+
+
+    def find_matching_pairs(self):
+        """
+        Third step in solving sudoku: find matcing pairs in rows, cols and boxes and eliminate these numbers
+        from other parts of the row, col or box
+        """
+
+        print("Find matcing pairs")
+
+        for row in range(9):
+            print(f"Find pairs in row: {row}")
+            self.find_matching_pairs_in_cells(row, row+1, 0,9)
+        for col in range(9):
+            print(f"Find paris in col: {col}")
+            self.find_matching_pairs_in_cells(0, 9, col,col+1)
+
+        for row_count in range(0,3):
+            for col_count in range(0,3):
+                print(f"Find pairs in box: {row_count*3}{(row_count+1)*3}{col_count*3}{(col_count+1)*3}")
+                self.find_matching_pairs_in_cells(row_count*3, (row_count+1)*3, col_count*3, (col_count+1)*3)
+
+    def find_matching_pairs_in_cells(self, start_row, end_row, start_col, end_col):
+        """
+        Auxilliary method used by find_matching_pairs to avoid code duplication
+        """
+
+        candidate_pairs = []
+        corresponding_pairs = []
+        #first pass - find corresponding pairs in the row, col or box
+        for row in range(start_row, end_row):
+            for col in range(start_col, end_col):
+
+                if len(self.working_matrix[row][col])==2:
+                    print(f"check against: {[self.working_matrix[row][col][0], self.working_matrix[row][col][1]]} and candidate_pairs: {candidate_pairs}")
+                    if [self.working_matrix[row][col][0],self.working_matrix[row][col][1]] in candidate_pairs: # and self.working_matrix[row][col][1] in candidate_pairs:
+                        
+                        corresponding_pairs.append([self.working_matrix[row][col][0],self.working_matrix[row][col][1]])
+                            #corresponding_pairs.append(self.working_matrix[row][col][1])
+                    else:
+                        candidate_pairs.append([self.working_matrix[row][col][0],self.working_matrix[row][col][1]])
+                        #candidate_pairs.append(self.working_matrix[row][col][1])
+                
+        print(f"canidate_pairs: {candidate_pairs} corresponding pairs: {corresponding_pairs}")
+        #second pass - eliminate matching pair numbers from other locations in the current row, col or box        
+        for pair in corresponding_pairs:
+            print(f"eliminating {pair[0]} and {pair[1]}")
+            for row in range(start_row, end_row):
+                for col in range(start_col, end_col):
+
+                    if len(self.working_matrix[row][col])==2 and self.working_matrix[row][col][0]==pair[0] and\
+                        self.working_matrix[row][col][1]==pair[1]:
+                        pass
+                    elif len(self.working_matrix[row][col])>1:
+                        if pair[0] in self.working_matrix[row][col]:
+                            self.working_matrix[row][col].remove(pair[0])
+
+                            print(f"removed number: {pair[0]}")
+                            if len(self.working_matrix[row][col])==1:
+                                self.solution_matrix[row, col]=self.working_matrix[row][col][0]
+                        if pair[1] in self.working_matrix[row][col]:
+                            self.working_matrix[row][col].remove(pair[1])
+                            print(f"removed number: {pair[1]}")
+                            if len(self.working_matrix[row][col])==1:
+                                self.solution_matrix[row, col]=self.working_matrix[row][col][0]
+
+
+            
+
 
         

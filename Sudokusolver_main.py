@@ -5,7 +5,7 @@ import sudoku_solver
 def handle_arguments():
     print("handling arguments")
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_image", default = "sudoku_intermediate.jpg", type=str, help="File path to image of sudoku")
+    parser.add_argument("-i", "--input_image", default = "samuraj.jpg", type=str, help="File path to image of sudoku")
 
     args = parser.parse_args()
     infile = args.input_image
