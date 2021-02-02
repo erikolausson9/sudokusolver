@@ -4,6 +4,7 @@ import math
 import sys
 import os
 import cv2
+import copy
 
 class CornerPosition:
     
@@ -681,9 +682,13 @@ class SudokuMatrix:
                     #No new numbers found on this pass, move on to find matching pairs
                     self.find_matching_pairs()
 
+                    if old_left_to_solve == left_to_solve:
+                        #No new numbers found on this pass, move on to trial and error solving
+                        self.trial_and_error()
 
-        self.print_working_matrix()
-        self.print_solution_matrix()
+
+        #self.print_working_matrix()
+        #self.print_solution_matrix()
 
 
     def eliminate_numbers(self):
@@ -829,6 +834,167 @@ class SudokuMatrix:
                             print(f"removed number: {pair[1]}")
                             if len(self.working_matrix[row][col])==1:
                                 self.solution_matrix[row, col]=self.working_matrix[row][col][0]
+
+    
+    def trial_and_error(self):
+        """
+        Failing all else, try a brute force tactic to solve the last remaining squares
+
+        """
+        break_loop = False
+        for row in range(9):
+            for col in range(9):
+                if len(self.working_matrix[row][col])==2:
+                    first_number = self.working_matrix[row][col][0]
+                    second_number = self.working_matrix[row][col][1]
+                    number_row = row
+                    number_col = col
+                    break_loop = True
+                    break
+            if break_loop:
+                break
+        
+        firstGuess = SudokuMatrix(self.solution_matrix)
+        firstGuess.working_matrix = copy.deepcopy(self.working_matrix)
+        print("Printing working matrix of firstGuess")
+        firstGuess.print_working_matrix()
+
+        firstGuess.working_matrix[number_row][number_col] = [first_number]
+        firstGuess.solution_matrix[number_row][number_col] = first_number
+
+        left_to_solve = (firstGuess.solution_matrix==0).sum()
+        while True:
+            old_left_to_solve = left_to_solve
+            print(f"New pass on trial and error. Left to solve: {left_to_solve}")
+            firstGuess.print_working_matrix()
+
+            firstGuess.eliminate_numbers()
+            #print("Printing working matrix of firstGuess after first pass")
+            #firstGuess.print_working_matrix()
+            left_to_solve = (firstGuess.solution_matrix==0).sum()
+            if firstGuess.check_solution() is False:
+                print("This solution won't work")
+                break
+            elif left_to_solve == 0:
+                print("Skipping out after elminate numbers")
+                firstGuess.print_solution_matrix()
+                break
+            elif old_left_to_solve==left_to_solve:
+                firstGuess.evaluate_rows_cols_boxes()
+                
+                left_to_solve = (firstGuess.solution_matrix==0).sum()
+                if firstGuess.check_solution() is False:
+                    print("This solution won't work")
+                    break
+                elif left_to_solve == 0:
+                    print("Skipping out after evaluate rows cols and boxes")
+                    firstGuess.print_solution_matrix()
+                    break
+                
+                elif old_left_to_solve==left_to_solve:
+                    firstGuess.find_matching_pairs()
+                    if firstGuess.check_solution() is False:
+                        print("This solution won't work")
+                        break
+                    elif left_to_solve == 0:
+                        print("skipping out after matching pairs")
+                        firstGuess.print_solution_matrix()
+                        break
+
+        if firstGuess.check_solution() is False:
+            secondGuess = SudokuMatrix(self.solution_matrix)
+            secondGuess.working_matrix = copy.deepcopy(self.working_matrix)
+            #print("Printing working matrix of secondGuess")
+            #secondGuess.print_working_matrix()
+
+            secondGuess.working_matrix[number_row][number_col] = [second_number]
+            secondGuess.solution_matrix[number_row][number_col] = second_number
+
+            left_to_solve = (secondGuess.solution_matrix==0).sum()
+            while True:
+                old_left_to_solve = left_to_solve
+                print(f"New pass on trial and error. Left to solve: {left_to_solve}")
+                secondGuess.print_working_matrix()
+
+                secondGuess.eliminate_numbers()
+                #print("Printing working matrix of firstGuess after first pass")
+                #firstGuess.print_working_matrix()
+                left_to_solve = (secondGuess.solution_matrix==0).sum()
+                if secondGuess.check_solution() is False:
+                    print("This solution won't work")
+                    break
+                elif left_to_solve == 0:
+                    print("Skipping out after elminate numbers")
+                    secondGuess.print_solution_matrix()
+                    break
+                elif old_left_to_solve==left_to_solve:
+                    secondGuess.evaluate_rows_cols_boxes()
+                
+                    left_to_solve = (secondGuess.solution_matrix==0).sum()
+                    if secondGuess.check_solution() is False:
+                        print("This solution won't work")
+                        break
+                    elif left_to_solve == 0:
+                        print("Skipping out after evaluate rows cols and boxes")
+                        secondGuess.print_solution_matrix()
+                        break
+                
+                    elif old_left_to_solve==left_to_solve:
+                        secondGuess.find_matching_pairs()
+                        if secondGuess.check_solution() is False:
+                            print("This solution won't work")
+                            break
+                        elif left_to_solve == 0:
+                            print("skipping out after matching pairs")
+                            secondGuess.print_solution_matrix()
+                            break
+            if secondGuess.check_solution() is False:
+                print("I'm sorry, I cannot find the correct solution to this soduku :(")                    
+
+
+
+
+    def check_solution(self):
+        
+        
+        for row in range(9):
+            
+            return_value = self.check_cells(row, row+1, 0,9)
+            print(f"Check row: {row} return value: {return_value}")
+            if return_value is False:
+                return False
+
+        for col in range(9):
+            print(f"Check col: {col}")
+            return_value = self.check_cells(0, 9, col,col+1)
+            if return_value is False:
+                return False
+
+        for row_count in range(0,3):
+            for col_count in range(0,3):
+                print(f"Check box: {row_count*3}{(row_count+1)*3}{col_count*3}{(col_count+1)*3}")
+                return_value = self.check_cells(row_count*3, (row_count+1)*3, col_count*3, (col_count+1)*3)
+                if return_value is False:
+                    return False
+    
+        return True
+
+    def check_cells(self, start_row, end_row, start_col, end_col):
+        """
+        Auxilliary function used
+        """
+
+        current_area = self.solution_matrix[start_row:end_row, start_col:end_col]
+
+        current_area = current_area[numpy.nonzero(current_area)]
+
+        if len(numpy.unique(current_area))<len(current_area):
+            return False
+        else:
+            return True
+
+
+
 
 
             
