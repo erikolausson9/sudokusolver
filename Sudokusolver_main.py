@@ -30,7 +30,7 @@ def handle_arguments():
 
     mySudokuMatrix = sudoku_solver.SudokuMatrix(solution_matrix)
     mySudokuMatrix.print_solution_matrix()
-    mySudokuMatrix.print_working_matrix()
+    #mySudokuMatrix.print_working_matrix()
     mySudokuMatrix.solve_sudoku()
     
 
