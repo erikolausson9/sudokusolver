@@ -593,9 +593,13 @@ class SudokuImage:
         return guess
 
 class SudokuMatrix:
+    """
+    Class used for solving the soduku once the initial numbers are found
+    """
     def __init__(self, solution_matrix):
         self.solution_matrix = solution_matrix.copy()
 
+        #Given the solution_matrix, initiate the working_matrix
         self.working_matrix = [[0]*9 for ii in range(9)]
         for row in range(9):
             for col in range(9):
@@ -606,6 +610,9 @@ class SudokuMatrix:
 
 
     def print_solution_matrix(self):
+        """
+        Auxilliary method used for printing out the current state of the solution_matrix in i readable format
+        """
         print("Solution matrix: ")
         print('-------------------')
         for row in range(9):
@@ -614,6 +621,9 @@ class SudokuMatrix:
                 print('-------------------')
 
     def print_working_matrix(self):
+        """
+        Auxilliary function used to print the content of the working_matrix in a readable format. Used for development and debug.
+        """
 
         print("Working matrix:")
         print('Row 0: -----------------')
@@ -640,6 +650,13 @@ class SudokuMatrix:
 
 
     def solve_sudoku(self):
+        """
+        Method handling the main loop for solving the sudoku, using four strategies:
+        1) Eliminate numbers from rows, cols and boxes already solved
+        2) Find unique posibility (that is, numbers found in only one place) in rows, cols and boxes
+        3) Find corresponding pairs and eliminate these numbers from other locations in the row, col or box
+        4) Trial and error of remaining possible solutions (if only two)
+        """
 
         print("Solving sudoku")
 
@@ -652,20 +669,17 @@ class SudokuMatrix:
             old_left_to_solve = left_to_solve
 
             print(f"pass nr: {pass_count}. Left to solve: {left_to_solve}")
+            #self.print_working_matrix()
             self.eliminate_numbers()
 
             left_to_solve = (self.solution_matrix==0).sum()
 
             if old_left_to_solve==left_to_solve:
-                #print("Working matrix before evaluate rows cols boxes")
-                #self.print_working_matrix()
                 #No new numbers found on this pass, move on to evaluating rows, cols and boxes
                 self.evaluate_rows_cols_boxes()
 
                 left_to_solve = (self.solution_matrix==0).sum()
                 if old_left_to_solve == left_to_solve:
-                    #print("Working matrix before find_matching_pairs:")
-                    #self.print_working_matrix()
                     #No new numbers found on this pass, move on to find matching pairs
                     self.find_matching_pairs()
 
@@ -696,14 +710,10 @@ class SudokuMatrix:
                 if len(self.working_matrix[row][col])>1:
                     count = 0
                     while True:
-                        #print(f"row: {row} col: {col} count: {count}")
-                        #print(working_matrix[row][col])
-
                         if len(self.working_matrix[row][col])<count+1:
                             break
                         else:
                             current_number = self.working_matrix[row][col][count]
-                            #print(f"current_number: {current_number} ii {ii} len(working_matrix): {len(working_matrix[row][col])}")
                             current_box = self.solution_matrix[row_step*3:(row_step+1)*3, col_step*3:(col_step+1)*3]
                             if current_number in self.solution_matrix[row,:] or current_number in self.solution_matrix[:,col] or current_number in current_box:
                                 self.working_matrix[row][col].remove(current_number)
@@ -721,15 +731,13 @@ class SudokuMatrix:
         print("Evaluating rows, cols and boxes")
 
         for row in range(9):
-            #print(f"Evaluate row: {row}")
             self.evaluate_cells(row, row+1, 0,9)
+
         for col in range(9):
-            #print(f"Evaluate col: {col}")
             self.evaluate_cells(0, 9, col,col+1)
 
         for row_count in range(0,3):
             for col_count in range(0,3):
-                #print(f"Evaluate box: {row_count*3}{(row_count+1)*3}{col_count*3}{(col_count+1)*3}")
                 self.evaluate_cells(row_count*3, (row_count+1)*3, col_count*3, (col_count+1)*3)
 
 
@@ -775,15 +783,13 @@ class SudokuMatrix:
         print("Find matching pairs")
 
         for row in range(9):
-            #print(f"Find pairs in row: {row}")
             self.find_matching_pairs_in_cells(row, row+1, 0,9)
+        
         for col in range(9):
-            #print(f"Find paris in col: {col}")
             self.find_matching_pairs_in_cells(0, 9, col,col+1)
 
         for row_count in range(0,3):
             for col_count in range(0,3):
-                #print(f"Find pairs in box: {row_count*3}{(row_count+1)*3}{col_count*3}{(col_count+1)*3}")
                 self.find_matching_pairs_in_cells(row_count*3, (row_count+1)*3, col_count*3, (col_count+1)*3)
 
 
@@ -799,16 +805,11 @@ class SudokuMatrix:
             for col in range(start_col, end_col):
 
                 if len(self.working_matrix[row][col])==2:
-                    #print(f"check against: {[self.working_matrix[row][col][0], self.working_matrix[row][col][1]]} and candidate_pairs: {candidate_pairs}")
-                    if [self.working_matrix[row][col][0],self.working_matrix[row][col][1]] in candidate_pairs: # and self.working_matrix[row][col][1] in candidate_pairs:
-                        
-                        corresponding_pairs.append([self.working_matrix[row][col][0],self.working_matrix[row][col][1]])
-                            #corresponding_pairs.append(self.working_matrix[row][col][1])
+                    if [self.working_matrix[row][col][0],self.working_matrix[row][col][1]] in candidate_pairs: 
+                        corresponding_pairs.append([self.working_matrix[row][col][0],self.working_matrix[row][col][1]])     
                     else:
                         candidate_pairs.append([self.working_matrix[row][col][0],self.working_matrix[row][col][1]])
-                        #candidate_pairs.append(self.working_matrix[row][col][1])
-                
-        #print(f"canidate_pairs: {candidate_pairs} corresponding pairs: {corresponding_pairs}")
+                        
         #second pass - eliminate matching pair numbers from other locations in the current row, col or box        
         for pair in corresponding_pairs:
             #print(f"eliminating {pair[0]} and {pair[1]}")
@@ -852,8 +853,6 @@ class SudokuMatrix:
         
         firstGuess = SudokuMatrix(self.solution_matrix)
         firstGuess.working_matrix = copy.deepcopy(self.working_matrix)
-        #print("Printing working matrix of firstGuess")
-        #firstGuess.print_working_matrix()
 
         firstGuess.working_matrix[number_row][number_col] = [first_number]
         firstGuess.solution_matrix[number_row][number_col] = first_number
@@ -864,11 +863,8 @@ class SudokuMatrix:
             old_left_to_solve = left_to_solve
             pass_count += 1
             print(f"Pass {pass_count} on trial and error. Left to solve: {left_to_solve}")
-            #firstGuess.print_working_matrix()
 
             firstGuess.eliminate_numbers()
-            #print("Printing working matrix of firstGuess after first pass")
-            #firstGuess.print_working_matrix()
             left_to_solve = (firstGuess.solution_matrix==0).sum()
             if firstGuess.check_solution() is False:
                 #print("This solution won't work")
@@ -946,9 +942,7 @@ class SudokuMatrix:
                             break
             if secondGuess.check_solution() is False or pass_count==25:
                 print("I'm sorry, I cannot find the correct solution to this sudoku :(")                    
-        #else:
-        #    print("I'm sorry, I cannot find the correct solution to this sudoku :(")
-
+        
 
 
     def check_solution(self):
@@ -957,21 +951,17 @@ class SudokuMatrix:
         """
         
         for row in range(9):
-            
             return_value = self.check_cells(row, row+1, 0,9)
-            #print(f"Check row: {row} return value: {return_value}")
             if return_value is False:
                 return False
 
         for col in range(9):
-            #print(f"Check col: {col}")
             return_value = self.check_cells(0, 9, col,col+1)
             if return_value is False:
                 return False
 
         for row_count in range(0,3):
             for col_count in range(0,3):
-                #print(f"Check box: {row_count*3}{(row_count+1)*3}{col_count*3}{(col_count+1)*3}")
                 return_value = self.check_cells(row_count*3, (row_count+1)*3, col_count*3, (col_count+1)*3)
                 if return_value is False:
                     return False
