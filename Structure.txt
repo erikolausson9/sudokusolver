@@ -59,7 +59,10 @@ Nästa steg blir att i varje segmenterad bild (som har mer än ett visst medelta
 
 29 januari: "allt" funkar vad gäller bildbehandling och bildanalys, har gått vidare till själva sudokulösandet. Att bara lösa genom elimination funkar inte fullt ut, nästa steg blir att utvärdera rader, kolumner och boxar och leta efter siffror som bara kan finnas på ett ställe.
 
-N n 
-Hedwig
-ppppppppppppppppppppppppppppppppppppppp
-M m
+3 februari:
+Nu funkar den faktiskt så bra som jag tänka mig. Den löser allt den får så länge den hittar alla siffror. På sudoku_far_away är det en siffra den inte lyckas identifiera och därmed får man besked om att det inte går att lösa sudokut.
+Nu håller jag på med refactoring. Alla metoder borde höra till de två klasserna, de flesta till SudokuImage.
+När väl det är klart och allt kommenterat och städat ska jag ta (minst) en veckas paus från kodandet innan jag börjar med Tensorflow.
+
+8 februari:
+Allt är städat, klart och fungerande. Har checkat in koden och låter projektet vila nu i en vecka. Nästa steg blir att testa Tensorflow!
