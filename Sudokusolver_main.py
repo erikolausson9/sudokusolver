@@ -5,14 +5,14 @@ import sudoku_solver
 def handle_arguments():
     print("handling arguments")
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_image", default = "sudoku_extrabild2.jpg", type=str, help="File path to image of sudoku")
+    parser.add_argument("-i", "--input_image", default = "sudoku_intermediate.jpg", type=str, help="File path to image of sudoku")
 
     args = parser.parse_args()
     infile = args.input_image
 
     print(infile)
 
-    sudokuImage = sudoku_solver.SudokuImage(infile)
+    sudokuImage = sudoku_solver.SudokuImage(image_path=infile, use_tensorflow=True)
 
     image_array = sudokuImage.handle_image()
 
