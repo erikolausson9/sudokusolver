@@ -5,6 +5,7 @@ import sys
 import os
 import cv2
 import copy
+import tensorflow as tf
 
 class CornerPosition:
     
@@ -16,9 +17,10 @@ class CornerPosition:
 
 class SudokuImage:
 
-    def __init__(self, image_path):
+    def __init__(self, image_path, use_tensorflow=True):
         self.ratio = 1
         self.image_file = Image.open(image_path).convert("L")
+        self.use_tensorflow = use_tensorflow
         
 
 
@@ -120,7 +122,7 @@ class SudokuImage:
         #print("done")
         result_array = numpy.array(result_array)
         result_im = Image.fromarray(result_array)
-        #result_im.show()
+        result_im.show()
 
         #self.save_numpy_array(result_array, 'lower_left_corner_intermediate_13_13.npy')
 
@@ -246,8 +248,8 @@ class SudokuImage:
             diff_array[best_y+2, best_x-2:best_x+3] = 255
             diff_array[best_y-2:best_y+3, best_x-2] = 255
             diff_array[best_y-2:best_y+3, best_x+2] = 255
-        #diff_im = Image.fromarray(diff_array)
-        #diff_im.show() #Will show "heatmap" of best corner match
+        diff_im = Image.fromarray(diff_array)
+        diff_im.show() #Will show "heatmap" of best corner match
         print(f"Best x: {best_x} best y: {best_y} best_score: {best_score}")
 
         #Draw a square around the best_x and best_y position to highlight the guess
@@ -427,25 +429,33 @@ class SudokuImage:
 
         return corner_position_list
 
-#This is as far as I got
+
     def segment_cells(self, normalized_array):
+
+        """
+        Central function to go through each cell in the sudoku and 
+        1. Determine if the cell contains a number or is empty
+        2. Determine which number it contains (if any)
+
+        Step two can be done with template matching or with a tensorflow model
+        """
     
         width = len(normalized_array)
         cell_width = int(round(width/9))
         cell_margin = int(round(cell_width*0.12))
 
-        #load list of thresholded images of the numbers to compare to:
-        #true_numbers = []
-        #for ii in range(1,10):
-        #    path =  'numbers2/number_' + str(ii) + '.npy'
-        #    with open(path,'rb') as f:
-        #        true_numbers.append(numpy.load(f))
+      
 
         true_gradient_numbers = []
         for ii in range(1,10):
             path =  'numbers/gradient_' + str(ii) + '.npy'
             with open(path,'rb') as f:
                 true_gradient_numbers.append(numpy.load(f))
+        
+        if self.use_tensorflow:
+            number_model = tf.keras.models.load_model('number_models/number_model_large')
+            number_model.summary()
+
 
         #Create a solution-matrix to store the found numbers
         solution_matrix = [[0]*9 for ii in range(9)]
@@ -457,8 +467,11 @@ class SudokuImage:
                 current_cell = normalized_array[cell_row*cell_width+cell_margin:(cell_row+1)*cell_width-cell_margin, cell_col*cell_width+cell_margin:(cell_col+1)*cell_width-cell_margin]
                 cell_mean = numpy.mean(numpy.mean(current_cell))
             
+                current_cell_for_tensorflow = current_cell.copy()
+
                 current_cell = self.gaussian_blur(current_cell)
                 current_cell_for_gradient = current_cell.copy()
+                
 
                 #Threshold the cell and take a sample at its center
                 current_cell[current_cell>cell_mean*0.81] = 255
@@ -467,6 +480,7 @@ class SudokuImage:
                 cell_sample = current_cell[cell_sample_margin:cell_width-cell_sample_margin, cell_sample_margin:cell_width-cell_sample_margin]
             
                 if numpy.mean(numpy.mean(cell_sample))<250: #This is true if we have a number in the current cell
+                    
                     #find the bounding box of the thresholded number
                 
                     #Top row
@@ -505,11 +519,7 @@ class SudokuImage:
                         current_col = current_cell[:, end_col]
                         number_of_black_pixels = len(numpy.where(current_col<250)[0])
                 
-                    #cut out the number and resize to 16 pixels width and 22 pixels height
-                    #normalized_cell = current_cell[start_row:end_row+1,start_col:end_col+1]
-                    #normalized_cell = Image.fromarray(normalized_cell)
-                    #normalized_cell.show()
-                    #normalized_cell = normalized_cell.resize((16,22))
+                    
                
 
                     #cut out for gradient number image
@@ -517,20 +527,33 @@ class SudokuImage:
                     start_col = max(0, (start_col-2))
                     end_row = min(len(current_cell), (end_row+3))
                     end_col = min(len(current_cell), (end_col+3))
-                    normalized_gradient_cell = current_cell_for_gradient[start_row:end_row, start_col:end_col]
-                    normalized_gradient_cell = self.sobel_convolution(normalized_gradient_cell)
+
+                    if self.use_tensorflow:
+                        #cut out for tensorflow image
+                        normalized_cell = current_cell_for_tensorflow[start_row:end_row, start_col:end_col]
+                        normalized_cell = normalized_cell/(normalized_cell.max()/255.0)#This will normalize the array to [0,255]
+                        normalized_cell_im = Image.fromarray(normalized_cell)
+                        normalized_cell_im = normalized_cell_im.resize((18,24))
+                        normalized_cell = numpy.asarray(normalized_cell_im)
+
+                        solution_matrix[cell_row,cell_col] = self.identify_number_with_tensorflow(normalized_cell, number_model)
+                    else:
+                        normalized_gradient_cell = current_cell_for_gradient[start_row:end_row, start_col:end_col]
+                        normalized_gradient_cell = self.sobel_convolution(normalized_gradient_cell)
            
-                    normalized_gradient_cell = normalized_gradient_cell/(normalized_gradient_cell.max()/255.0) #This will normalize the array to [0,255] with highest value given to (x,y) of best match
+                        normalized_gradient_cell = normalized_gradient_cell/(normalized_gradient_cell.max()/255.0) #This will normalize the array to [0,255] with highest value given to (x,y) of best match
                 
-                    #Normalize size of number image
-                    gradient_cell_im = Image.fromarray(normalized_gradient_cell)
-                    gradient_cell_im = gradient_cell_im.resize((18,24))
-                    normalized_gradient_cell = numpy.asarray(gradient_cell_im)
+                        #Normalize size of number image
+                        gradient_cell_im = Image.fromarray(normalized_gradient_cell)
+                        gradient_cell_im = gradient_cell_im.resize((18,24))
+                        normalized_gradient_cell = numpy.asarray(gradient_cell_im)
               
-                    solution_matrix[cell_row,cell_col] = self.identify_number(normalized_gradient_cell, true_gradient_numbers)
+                        solution_matrix[cell_row,cell_col] = self.identify_number(normalized_gradient_cell, true_gradient_numbers)
+
+                    
                 
                     #Use save_number to save image and numpy array for training purposes etc. 
-                    #save_number(normalized_gradient_cell, 'numbers5', cell_row, cell_col, guess)
+                    #self.save_number(normalized_cell, 'tensorflow_numbers', cell_row, cell_col, solution_matrix[cell_row,cell_col])
 
         return solution_matrix          
                 
@@ -540,14 +563,14 @@ class SudokuImage:
         if number == 0:
             path = f"{directory}/row_{row}_col_{col}"
         else:
-            root_path = f"{directory}/{number}"
+            root_path = f"{directory}/{number}/{number}"
             count = 0
             path = root_path
             while (os.path.exists(path + '.jpg') or os.path.exists(path + '.npy')):
                 count += 1
                 path = f"{root_path}_{count}"
     
-        save_numpy_array(number_array, path + '.npy')
+        #self.save_numpy_array(number_array, path + '.npy')
         number_image = Image.fromarray(number_array)
         if number_image.mode != 'RGB':
             number_image = number_image.convert('RGB')
@@ -591,6 +614,27 @@ class SudokuImage:
         print(f"Guess: {guess} and second guess: {second_guess} diff percentage: {round(second_best_score/best_score,2)}")
 
         return guess
+    
+    def identify_number_with_tensorflow(self, number_array, number_model):
+
+        #number_model = tf.keras.models.load_model('number_models/number_model_large')
+
+        #number_model.summary()
+
+        number_image = Image.fromarray(number_array)
+        if number_image.mode != 'RGB':
+            number_image = number_image.convert('RGB')
+
+        number_image_tensor = tf.keras.preprocessing.image.img_to_array(number_image)
+
+        number_image_tensor = tf.expand_dims(number_image_tensor, 0)
+
+        predictions = number_model.predict(number_image_tensor)
+        score = tf.nn.softmax(predictions[0])
+
+        return numpy.argmax(score)+1   
+
+
 
 class SudokuMatrix:
     """
