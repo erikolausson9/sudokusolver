@@ -68,6 +68,3 @@ När väl det är klart och allt kommenterat och städat ska jag ta (minst) en v
 Allt är städat, klart och fungerande. Har checkat in koden och låter projektet vila nu i en vecka. Nästa steg blir att testa Tensorflow!
 
 
-Första gången jag var föräldraledig löste jag mycket sudoku på lediga stunder. Denna gång programmerade jag istället en sudoku-lösare, i två versioner. En som enbart använder klassiska bildanalys-metoder så som faltning med Sobelfilter, normalisering och "template matching" för att hitta hörn och identifiera siffror. Och en mer modern version baserad på maskininlärning med Googles Tensorflow vilket gav ökad träffsäkerhet. Det var allt gott folk, slut på skrytet!
-
-During my first parental leave I solved a lot of sudoku when I hade time over. This turn I used the time to program a sudoku-solver, in two versions. One using only traditional computer vision techniques such as convolution with Sobel kernel, image normalization and template matching. For the second version I took a more modern approach, relying on deep learning using Googles Tensorflow which increased the accuracy even further. #Notsohumblebrag 
